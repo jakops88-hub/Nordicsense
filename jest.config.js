@@ -5,5 +5,6 @@ module.exports = {
   clearMocks: true,
   roots: ['<rootDir>/tests'],
   moduleFileExtensions: ['ts', 'js', 'json'],
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts']
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
+  setupFiles: ['<rootDir>/tests/setup.ts']
 };

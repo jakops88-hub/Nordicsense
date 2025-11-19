@@ -22,7 +22,7 @@ export interface SentimentTone {
 export interface SentimentResult {
   label: 'positive' | 'neutral' | 'negative';
   score: number;
-  tones?: SentimentTone[];
+  tones?: SentimentTone[] | undefined;
 }
 
 export interface TopicScore {

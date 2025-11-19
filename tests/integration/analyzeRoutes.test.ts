@@ -1,5 +1,8 @@
 import request from 'supertest';
 import type { FullAnalysisResult, SentimentResult } from '../../src/types/analysis';
+import { appConfig } from '../../src/config/env';
+
+appConfig.apiKeys = [];
 
 const sentimentStub: SentimentResult = { label: 'positive', score: 0.94 };
 
