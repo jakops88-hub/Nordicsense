@@ -49,6 +49,7 @@ Environment variables live in `.env` (see `.env.example`):
 | `DEFAULT_SUMMARY_LENGTH` | `short` | Default summary size. |
 | `MAX_TEXT_LENGTH` | `20000` | Maximum text payload length. |
 | `ALLOWED_ANALYSIS_FEATURES` | `full,sentiment,topics,keywords,summary,toxicity,entities` | Comma-separated list of enabled endpoints. |
+| `API_KEYS` | – | Comma-separated list of API keys (required for RapidAPI consumers). |
 
 ## API Overview
 All endpoints live under `/api`. Send JSON payloads:
@@ -73,6 +74,7 @@ All endpoints live under `/api`. Send JSON payloads:
 ```bash
 curl -X POST http://localhost:4000/api/analyze/sentiment \
   -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_KEY" \
   -d '{"text":"Jag älskar den nya designen!", "language":"sv"}'
 
 curl -X POST http://localhost:4000/api/analyze/topics \
@@ -97,6 +99,7 @@ curl -X POST http://localhost:4000/api/analyze/entities \
 
 curl -X POST http://localhost:4000/api/analyze/full \
   -H "Content-Type: application/json" \
+  -H "x-api-key: YOUR_KEY" \
   -d '{"text":"Leveransen var sen men supporten löste det snabbt."}'
 ```
 

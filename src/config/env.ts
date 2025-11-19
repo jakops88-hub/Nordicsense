@@ -15,7 +15,8 @@ const envSchema = z.object({
   MAX_TEXT_LENGTH: z.string().default('20000'),
   ALLOWED_ANALYSIS_FEATURES: z.string().default(
     'full,sentiment,topics,keywords,summary,toxicity,entities'
-  )
+  ),
+  API_KEYS: z.string().default('')
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -42,5 +43,8 @@ export const appConfig = {
   maxTextLength: Number(env.MAX_TEXT_LENGTH),
   allowedAnalysisFeatures: env.ALLOWED_ANALYSIS_FEATURES.split(',')
     .map((feature) => feature.trim())
+    .filter(Boolean),
+  apiKeys: env.API_KEYS.split(',')
+    .map((key) => key.trim())
     .filter(Boolean)
 };
