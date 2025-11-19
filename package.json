@@ -1,0 +1,55 @@
+{
+  "name": "nordicsense",
+  "version": "1.0.0",
+  "description": "Production-ready Nordic language text analysis API",
+  "main": "dist/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "lint": "tsc --noEmit",
+    "test": "jest --runInBand"
+  },
+  "keywords": [
+    "nordic",
+    "nlp",
+    "api",
+    "text-analysis",
+    "swedish"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "dependencies": {
+    "compression": "^1.7.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "franc-min": "^6.1.0",
+    "helmet": "^7.2.0",
+    "openai": "^4.75.0",
+    "pino": "^9.5.0",
+    "pino-http": "^10.3.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.5",
+    "@types/supertest": "^6.0.3",
+    "jest": "^29.7.0",
+    "pino-pretty": "^11.3.0",
+    "supertest": "^7.1.1",
+    "ts-jest": "^29.3.4",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.7.3"
+  }
+}
