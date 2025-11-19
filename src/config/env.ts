@@ -12,7 +12,10 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default('*'),
   LOG_LEVEL: z.string().default('info'),
   DEFAULT_SUMMARY_LENGTH: z.enum(['short', 'long']).default('short'),
-  MAX_TEXT_LENGTH: z.string().default('20000')
+  MAX_TEXT_LENGTH: z.string().default('20000'),
+  ALLOWED_ANALYSIS_FEATURES: z.string().default(
+    'full,sentiment,topics,keywords,summary,toxicity,entities'
+  )
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -36,5 +39,8 @@ export const appConfig = {
   corsOrigin: env.CORS_ORIGIN,
   logLevel: env.LOG_LEVEL,
   defaultSummaryLength: env.DEFAULT_SUMMARY_LENGTH,
-  maxTextLength: Number(env.MAX_TEXT_LENGTH)
+  maxTextLength: Number(env.MAX_TEXT_LENGTH),
+  allowedAnalysisFeatures: env.ALLOWED_ANALYSIS_FEATURES.split(',')
+    .map((feature) => feature.trim())
+    .filter(Boolean)
 };

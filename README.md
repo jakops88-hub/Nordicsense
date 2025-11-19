@@ -48,6 +48,7 @@ Environment variables live in `.env` (see `.env.example`):
 | `LOG_LEVEL` | `info` | Pino log level. |
 | `DEFAULT_SUMMARY_LENGTH` | `short` | Default summary size. |
 | `MAX_TEXT_LENGTH` | `20000` | Maximum text payload length. |
+| `ALLOWED_ANALYSIS_FEATURES` | `full,sentiment,topics,keywords,summary,toxicity,entities` | Comma-separated list of enabled endpoints. |
 
 ## API Overview
 All endpoints live under `/api`. Send JSON payloads:

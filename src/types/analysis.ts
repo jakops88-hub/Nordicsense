@@ -92,3 +92,5 @@ export interface FullAnalysisResult {
 export interface AnalysisContext extends AnalysisRequest {
   detectedLanguage?: SupportedLanguage;
 }
+
+export type AnalysisFeature = 'full' | 'sentiment' | 'topics' | 'keywords' | 'summary' | 'toxicity' | 'entities';
