@@ -10,7 +10,7 @@ import type {
 } from '../../src/types/analysis';
 
 jest.mock('../../src/services/languageService', () => ({
-  detectLanguage: jest.fn().mockReturnValue('sv')
+  detectLanguage: jest.fn().mockResolvedValue('sv')
 }));
 
 const mockSentiment: SentimentResult = { label: 'negative', score: 0.8 };

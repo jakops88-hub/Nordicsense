@@ -1,5 +1,6 @@
-import { franc } from 'franc-min';
-import { SupportedLanguage } from '../types/analysis';
+import type { SupportedLanguage } from '../types/analysis';
+
+type FrancFn = (input: string, options?: { minLength?: number }) => string;
 
 const langMap: Record<string, SupportedLanguage> = {
   swe: 'sv',
@@ -12,10 +13,21 @@ const langMap: Record<string, SupportedLanguage> = {
   eng: 'en'
 };
 
-export const detectLanguage = (text: string): SupportedLanguage => {
+let francLoader: FrancFn | null = null;
+
+const loadFranc = async (): Promise<FrancFn> => {
+  if (!francLoader) {
+    const module = await import('franc-min');
+    francLoader = module.franc;
+  }
+  return francLoader;
+};
+
+export const detectLanguage = async (text: string): Promise<SupportedLanguage> => {
   if (!text || text.length < 10) {
     return 'sv';
   }
+  const franc = await loadFranc();
   const detected = franc(text, { minLength: 10 });
   return langMap[detected] ?? 'sv';
 };
