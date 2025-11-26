@@ -1,4 +1,3 @@
-import pLimit from 'p-limit';
 import {
   AnalysisBatchRequest,
   AnalysisRequest,
@@ -135,6 +134,7 @@ export class TextAnalysisService {
   }
 
   async analyzeBatch(request: AnalysisBatchRequest): Promise<BatchAnalysisResult[]> {
+    const pLimit = (await import('p-limit')).default;
     const limit = pLimit(5);
 
     const promises = request.items.map(item =>
