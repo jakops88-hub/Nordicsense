@@ -16,13 +16,13 @@ import { detectLanguage } from './languageService';
 import { NlpProvider } from '../providers/NlpProvider';
 import { appConfig } from '../config/env';
 import CacheService from './cacheService';
-import piiService from './piiService';
+import { PiiService } from './piiService';
 
 export class TextAnalysisService {
   constructor(
     private readonly provider: NlpProvider,
     private readonly cache: CacheService<FullAnalysisResult>,
-    private readonly piiService: typeof piiService
+    private readonly piiService: PiiService
   ) {}
 
   private _maybeAnonymize(request: AnalysisRequest): AnalysisRequest {
@@ -143,7 +143,7 @@ export class TextAnalysisService {
           return await this.analyzeFull(item);
         } catch (error: any) {
           return {
-            error: true,
+            error: true as const,
             message: error.message || 'An unknown error occurred',
             originalText: item.text
           };

@@ -1,6 +1,6 @@
-import { PhoneNumberUtil, PhoneNumberFormat } from 'google-libphonenumber';
+import { PhoneNumberUtil, PhoneNumber } from 'google-libphonenumber';
 
-class PiiService {
+export class PiiService {
   private phoneUtil: PhoneNumberUtil;
 
   constructor() {
@@ -20,28 +20,28 @@ class PiiService {
 
   private anonymizeEmail(text: string): string {
     // A robust regex for email addresses
-    const emailRegex = /(([^<>()[\\]\\.,;:\s@\"]+(\.[^<>()[\\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/g;
+    const emailRegex = /(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))/g;
     return text.replace(emailRegex, '[EMAIL]');
   }
 
   private anonymizePhone(text: string): string {
-    // This is a simplified example. A real implementation would need to handle country codes better.
-    // We'll iterate through possible regions. For this example, we focus on Nordic countries.
-    const regions = ['SE', 'NO', 'DK', 'FI', 'US', 'GB'];
+    const phoneRegex = /(?:\+?\d{1,3}[ -]?)?\(?\d{2,3}\)?[ -]?\d{3,4}[ -]?\d{4}/g;
     let anonymizedText = text;
-    try {
-        for (const region of regions) {
-            const numbers = this.phoneUtil.findNumbers(anonymizedText, region);
-            for (const number of numbers) {
-                const formattedNumber = this.phoneUtil.format(number.number, PhoneNumberFormat.E164);
-                anonymizedText = anonymizedText.replace(number.rawString, '[PHONE]');
-            }
+    const matches = text.match(phoneRegex);
+
+    if (matches) {
+      for (const match of matches) {
+        try {
+          // Use a default region (e.g., 'US') for parsing, as it's good at handling international formats
+          const phoneNumber = this.phoneUtil.parseAndKeepRawInput(match, 'US');
+          if (this.phoneUtil.isValidNumber(phoneNumber)) {
+            anonymizedText = anonymizedText.replace(match, '[PHONE]');
+          }
+        } catch (error) {
+          // Ignore if parsing fails, it's likely not a valid phone number
         }
-    } catch (error) {
-        // Silently fail to avoid crashing on invalid numbers
+      }
     }
-
-
     return anonymizedText;
   }
 
@@ -52,11 +52,19 @@ class PiiService {
   }
 
   private luhnCheck(num: string): boolean {
+    if (!num || num.length < 13) {
+      return false;
+    }
     let arr = (num + '')
       .split('')
       .reverse()
-      .map(x => parseInt(x));
-    let lastDigit = arr.splice(0, 1)[0];
+      .map(x => parseInt(x, 10));
+    const lastDigit = arr.splice(0, 1)[0];
+
+    if (lastDigit === undefined) {
+      return false;
+    }
+
     let sum = arr.reduce(
       (acc, val, i) => (i % 2 !== 0 ? acc + val : acc + ((val * 2) % 9) || 9),
       0

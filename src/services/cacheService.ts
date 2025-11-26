@@ -6,7 +6,7 @@ interface CacheServiceOptions {
   ttl: number;
 }
 
-class CacheService<T> {
+class CacheService<T extends object> {
   private cache: LRUCache<string, T>;
 
   constructor(options: CacheServiceOptions) {
