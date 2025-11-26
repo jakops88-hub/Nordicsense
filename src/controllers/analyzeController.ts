@@ -1,11 +1,11 @@
 import type { Request, Response, NextFunction } from 'express';
 import { textAnalysisService } from '../services';
-import type { AnalysisRequest } from '../types/analysis';
+import type { AnalysisRequest, AnalysisBatchRequest } from '../types/analysis';
 
-type TypedRequest = Request<unknown, unknown, AnalysisRequest>;
+type TypedRequest<T> = Request<unknown, unknown, T>;
 
 export const analyzeController = {
-  full: async (req: TypedRequest, res: Response, next: NextFunction) => {
+  full: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.analyzeFull(req.body);
       res.json(result);
@@ -13,7 +13,17 @@ export const analyzeController = {
       next(error);
     }
   },
-  sentiment: async (req: TypedRequest, res: Response, next: NextFunction) => {
+
+  batch: async (req: TypedRequest<AnalysisBatchRequest>, res: Response, next: NextFunction) => {
+    try {
+      const result = await textAnalysisService.analyzeBatch(req.body);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  sentiment: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.analyzeSentiment(req.body);
       res.json(result);
@@ -21,7 +31,7 @@ export const analyzeController = {
       next(error);
     }
   },
-  topics: async (req: TypedRequest, res: Response, next: NextFunction) => {
+  topics: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.classifyTopics(req.body);
       res.json(result);
@@ -29,7 +39,7 @@ export const analyzeController = {
       next(error);
     }
   },
-  keywords: async (req: TypedRequest, res: Response, next: NextFunction) => {
+  keywords: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.extractKeywords(req.body);
       res.json(result);
@@ -37,7 +47,7 @@ export const analyzeController = {
       next(error);
     }
   },
-  summary: async (req: TypedRequest, res: Response, next: NextFunction) => {
+  summary: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.summarize(req.body);
       res.json(result);
@@ -45,7 +55,7 @@ export const analyzeController = {
       next(error);
     }
   },
-  toxicity: async (req: TypedRequest, res: Response, next: NextFunction) => {
+  toxicity: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.detectToxicity(req.body);
       res.json(result);
@@ -53,7 +63,7 @@ export const analyzeController = {
       next(error);
     }
   },
-  entities: async (req: TypedRequest, res: Response, next: NextFunction) => {
+  entities: async (req: TypedRequest<AnalysisRequest>, res: Response, next: NextFunction) => {
     try {
       const result = await textAnalysisService.extractEntities(req.body);
       res.json(result);

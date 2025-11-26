@@ -14,9 +14,11 @@ const envSchema = z.object({
   DEFAULT_SUMMARY_LENGTH: z.enum(['short', 'long']).default('short'),
   MAX_TEXT_LENGTH: z.string().default('20000'),
   ALLOWED_ANALYSIS_FEATURES: z.string().default(
-    'full,sentiment,topics,keywords,summary,toxicity,entities'
+    'full,sentiment,topics,keywords,summary,toxicity,entities,batch'
   ),
-  API_KEYS: z.string().default('')
+  API_KEYS: z.string().default(''),
+  CACHE_MAX_ITEMS: z.string().default('1000'),
+  CACHE_TTL_MS: z.string().default('3600000')
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -46,5 +48,9 @@ export const appConfig = {
     .filter(Boolean),
   apiKeys: env.API_KEYS.split(',')
     .map((key) => key.trim())
-    .filter(Boolean)
+    .filter(Boolean),
+  cache: {
+    maxItems: Number(env.CACHE_MAX_ITEMS),
+    ttlMs: Number(env.CACHE_TTL_MS),
+  }
 };

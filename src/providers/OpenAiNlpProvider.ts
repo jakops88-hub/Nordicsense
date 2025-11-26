@@ -59,9 +59,56 @@ export class OpenAiNlpProvider implements NlpProvider {
     }
   }
 
-  private buildContext(language: SupportedLanguage, text: string) {
-    return `Language: ${language}
-Text:
+  private getLanguageContext(lang: SupportedLanguage): string {
+    const baseRules = `Pay close attention to words with multiple meanings and sarcasm.
+Common Nordic examples:
+- Swedish: 'Vilken fart!' = positive (speed), NOT flatulence.
+- Swedish: 'Slut på lager' = neutral (out of stock), NOT an insult ('slut').
+- Swedish: 'Gift' can mean married (neutral/positive) or poison (negative). Context is key.
+- Danish/Norwegian: 'Fart' means 'speed' and is not flatulence.
+`;
+
+    switch (lang) {
+      case 'sv':
+        return `${baseRules}
+Swedish-specific nuances:
+- Sarcasm is common. Quotes around positive words like "Det var ju 'jättebra'..." often indicate sarcasm and negative sentiment.
+- The word 'not' at the end of a positive sentence indicates sarcasm, e.g., 'Vilken bra idé... not.'
+`;
+      case 'da':
+        return `${baseRules}
+Danish-specific nuances:
+- Be aware of false friends. For example, 'rar' means 'pleasant' or 'nice' (positive), not 'weird'. 'Han är en rar gutt' is a positive statement.
+- 'Frokost' means lunch, not breakfast.
+`;
+      case 'no':
+        return `${baseRules}
+Norwegian-specific nuances:
+- Pay attention to dialect and context. For example, 'tøs' can be derogatory or playful depending on the situation.
+- Differentiate between Bokmål and Nynorsk if possible, though context is more important.
+`;
+      case 'fi':
+        return `${baseRules}
+Finnish-specific nuances:
+- Finnish is an agglutinative language. Words can be very long and compound. Analyze the morphology.
+- 'No niin' is highly contextual and can mean anything from 'well now' (neutral) to 'oh great' (sarcastic) or 'that's it!' (positive).
+- 'Joo joo' often implies disbelief or impatience, not just simple agreement.
+`;
+      default:
+        return baseRules;
+    }
+  }
+
+  private buildContext(language: SupportedLanguage, text: string, taskPrompt: string) {
+    const languageContext = this.getLanguageContext(language);
+    return `Perform the following task on the text provided.
+LANGUAGE-SPECIFIC CONTEXT:
+${languageContext}
+
+TASK:
+${taskPrompt}
+
+TEXT:
 """
 ${text}
 """`;
@@ -81,12 +128,9 @@ ${text}
         .optional()
     });
 
-    const systemPrompt =
-      'You are a Nordic language sentiment analyst. Return strict JSON describing sentiment and tone nuances.';
-    const userPrompt = `${this.buildContext(
-      input.language,
-      input.text
-    )}\nDetermine overall sentiment and optional tone nuances.`;
+    const systemPrompt = `You are a master Nordic language sentiment analyst. Your response must be a single, minified JSON object that strictly adheres to the requested schema. Do not add any extra text, explanations, or markdown.`;
+    const taskPrompt = `Determine the overall sentiment (positive, neutral, negative) and score. Also identify any emotional, social, or writing style tones present.`;
+    const userPrompt = this.buildContext(input.language, input.text, taskPrompt);
 
     return this.runStructuredTask(systemPrompt, userPrompt, schema);
   }
@@ -101,12 +145,9 @@ ${text}
       )
     });
 
-    const systemPrompt =
-      'You are a Nordic CX analyst. Return relevant customer topics with confidence scores in JSON format.';
-    const userPrompt = `${this.buildContext(
-      input.language,
-      input.text
-    )}\nIdentify topics such as delivery, price, support, features, usability, complaints, praise and more.`;
+    const systemPrompt = `You are a master Nordic CX analyst. Your response must be a single, minified JSON object that strictly adheres to the requested schema. Do not add any extra text, explanations, or markdown.`;
+    const taskPrompt = `Identify relevant customer topics such as delivery, price, support, product quality, features, usability, complaints, praise, and bug reports. Provide a confidence score for each.`;
+    const userPrompt = this.buildContext(input.language, input.text, taskPrompt);
     return this.runStructuredTask(systemPrompt, userPrompt, schema);
   }
 
@@ -123,11 +164,10 @@ ${text}
     });
 
     const systemPrompt =
-      'You are a Nordic SEO assistant. Extract important keywords/phrases as JSON with importance and frequency.';
-    const userPrompt = `${this.buildContext(
-      input.language,
-      input.text
-    )}\nReturn between 5 and 12 keywords/phrases focusing on relevance.`;
+      'You are a Nordic SEO assistant. Extract important keywords/phrases as JSON with importance and frequency. Your response must be a single, minified JSON object that strictly adheres to the requested schema.';
+    const taskPrompt = `Return between 5 and 12 keywords or phrases, focusing on relevance for search engine optimization.`;
+    const userPrompt = this.buildContext(input.language, input.text, taskPrompt);
+
     const { keywords } = await this.runStructuredTask(systemPrompt, userPrompt, schema);
     return keywords.map((keyword) => ({
       ...keyword,
@@ -143,11 +183,10 @@ ${text}
     });
 
     const systemPrompt =
-      'You are a professional Nordic summarizer. Produce fluent summaries, never switching language if not needed.';
-    const userPrompt = `${this.buildContext(
-      input.language,
-      input.text
-    )}\nProduce a ${input.summaryLength} summary.`;
+      'You are a professional Nordic summarizer. Produce fluent summaries, never switching language if not needed. Your response must be a single, minified JSON object that strictly adheres to the requested schema.';
+    const taskPrompt = `Produce a ${input.summaryLength} summary of the text.`;
+    const userPrompt = this.buildContext(input.language, input.text, taskPrompt);
+
     const { summary } = await this.runStructuredTask(systemPrompt, userPrompt, schema);
     return {
       summary,
@@ -164,12 +203,9 @@ ${text}
       scores: z.record(z.number().min(0).max(1))
     });
 
-    const systemPrompt =
-      'You are a Nordic content safety service. Detect insults, hate speech, harassment, threats, discrimination, profanity.';
-    const userPrompt = `${this.buildContext(
-      input.language,
-      input.text
-    )}\nReturn whether the text is toxic. Provide per-label scores.`;
+    const systemPrompt = `You are a Nordic content safety service. Your response must be a single, minified JSON object that strictly adheres to the requested schema. Do not add any extra text, explanations, or markdown.`;
+    const taskPrompt = `Detect insults, hate speech, harassment, threats, discrimination, and profanity. Return whether the text is toxic and provide per-label scores for any detected categories.`;
+    const userPrompt = this.buildContext(input.language, input.text, taskPrompt);
 
     return this.runStructuredTask(systemPrompt, userPrompt, schema);
   }
@@ -187,11 +223,9 @@ ${text}
     });
 
     const systemPrompt =
-      'You are a Nordic NER model. Extract persons, locations, organizations, dates, monetary values, and products.';
-    const userPrompt = `${this.buildContext(
-      input.language,
-      input.text
-    )}\nProvide the character offsets using UTF-16 code units.`;
+      'You are a Nordic NER model. Extract persons, locations, organizations, dates, monetary values, and products. Your response must be a single, minified JSON object that strictly adheres to the requested schema.';
+    const taskPrompt = `Provide the character offsets using UTF-16 code units.`;
+    const userPrompt = this.buildContext(input.language, input.text, taskPrompt);
     const { entities } = await this.runStructuredTask(systemPrompt, userPrompt, schema);
     return entities;
   }

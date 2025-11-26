@@ -1,5 +1,8 @@
+import pLimit from 'p-limit';
 import {
+  AnalysisBatchRequest,
   AnalysisRequest,
+  BatchAnalysisResult,
   FullAnalysisResult,
   KeywordExtractionResult,
   NamedEntityResult,
@@ -12,9 +15,23 @@ import {
 import { detectLanguage } from './languageService';
 import { NlpProvider } from '../providers/NlpProvider';
 import { appConfig } from '../config/env';
+import CacheService from './cacheService';
+import piiService from './piiService';
 
 export class TextAnalysisService {
-  constructor(private readonly provider: NlpProvider) {}
+  constructor(
+    private readonly provider: NlpProvider,
+    private readonly cache: CacheService<FullAnalysisResult>,
+    private readonly piiService: typeof piiService
+  ) {}
+
+  private _maybeAnonymize(request: AnalysisRequest): AnalysisRequest {
+    if (request.anonymize) {
+      const anonymizedText = this.piiService.anonymize(request.text);
+      return { ...request, text: anonymizedText };
+    }
+    return request;
+  }
 
   private async resolveLanguage(request: AnalysisRequest): Promise<SupportedLanguage> {
     if (request.language) {
@@ -24,51 +41,81 @@ export class TextAnalysisService {
   }
 
   async analyzeSentiment(request: AnalysisRequest): Promise<SentimentResult> {
-    const language = await this.resolveLanguage(request);
-    return this.provider.analyzeSentiment({ ...request, language });
+    const req = this._maybeAnonymize(request);
+    const language = await this.resolveLanguage(req);
+    return this.provider.analyzeSentiment({ ...req, language });
   }
 
   async classifyTopics(request: AnalysisRequest): Promise<TopicClassificationResult> {
-    const language = await this.resolveLanguage(request);
-    return this.provider.classifyTopics({ ...request, language });
+    const req = this._maybeAnonymize(request);
+    const language = await this.resolveLanguage(req);
+    return this.provider.classifyTopics({ ...req, language });
   }
 
   async extractKeywords(request: AnalysisRequest): Promise<KeywordExtractionResult> {
-    const language = await this.resolveLanguage(request);
-    return this.provider.extractKeywords({ ...request, language });
+    const req = this._maybeAnonymize(request);
+    const language = await this.resolveLanguage(req);
+    return this.provider.extractKeywords({ ...req, language });
   }
 
   async summarize(request: AnalysisRequest): Promise<SummaryResult> {
-    const language = await this.resolveLanguage(request);
-    const summaryLength = request.summaryLength ?? appConfig.defaultSummaryLength;
-    return this.provider.summarize({ ...request, language, summaryLength });
+    const req = this._maybeAnonymize(request);
+    const language = await this.resolveLanguage(req);
+    const summaryLength = req.summaryLength ?? appConfig.defaultSummaryLength;
+    return this.provider.summarize({ ...req, language, summaryLength });
   }
 
   async detectToxicity(request: AnalysisRequest): Promise<ToxicityResult> {
-    const language = await this.resolveLanguage(request);
-    return this.provider.detectToxicity({ ...request, language });
+    const req = this._maybeAnonymize(request);
+    const language = await this.resolveLanguage(req);
+    return this.provider.detectToxicity({ ...req, language });
   }
 
   async extractEntities(request: AnalysisRequest): Promise<NamedEntityResult> {
-    const language = await this.resolveLanguage(request);
-    return this.provider.extractEntities({ ...request, language });
+    const req = this._maybeAnonymize(request);
+    const language = await this.resolveLanguage(req);
+    return this.provider.extractEntities({ ...req, language });
   }
 
   async analyzeFull(request: AnalysisRequest): Promise<FullAnalysisResult> {
-    const language = await this.resolveLanguage(request);
-    const summaryLength = request.summaryLength ?? appConfig.defaultSummaryLength;
+    const req = this._maybeAnonymize(request);
+    if (req.text.length < 20) {
+      return {
+        language: 'en', // Or detect language if needed
+        sentiment: { label: 'neutral', score: 0.5 },
+        topics: { topics: [] },
+        keywords: [],
+        summary: { summary: req.text, language: 'en', originalLength: req.text.length, summaryLength: 'short' },
+        toxicity: { isToxic: false, labels: [], scores: {} },
+        entities: [],
+        meta: {
+          provider: 'short_text_shortcut',
+          processingTimeMs: 1
+        }
+      };
+    }
+    
+    const language = await this.resolveLanguage(req);
+    const summaryLength = req.summaryLength ?? appConfig.defaultSummaryLength;
+    const requestWithLang = { ...req, language, summaryLength };
+
+    const cachedResult = this.cache.get(requestWithLang);
+    if (cachedResult) {
+      return { ...cachedResult, meta: { ...cachedResult.meta, cached: true } };
+    }
+
     const started = Date.now();
 
     const [sentiment, topics, keywords, summary, toxicity, entities] = await Promise.all([
-      this.provider.analyzeSentiment({ ...request, language }),
-      this.provider.classifyTopics({ ...request, language }),
-      this.provider.extractKeywords({ ...request, language }),
-      this.provider.summarize({ ...request, language, summaryLength }),
-      this.provider.detectToxicity({ ...request, language }),
-      this.provider.extractEntities({ ...request, language })
+      this.provider.analyzeSentiment(requestWithLang),
+      this.provider.classifyTopics(requestWithLang),
+      this.provider.extractKeywords(requestWithLang),
+      this.provider.summarize(requestWithLang),
+      this.provider.detectToxicity(requestWithLang),
+      this.provider.extractEntities(requestWithLang)
     ]);
 
-    return {
+    const result: FullAnalysisResult = {
       language,
       sentiment,
       topics,
@@ -81,5 +128,29 @@ export class TextAnalysisService {
         processingTimeMs: Date.now() - started
       }
     };
+
+    this.cache.set(requestWithLang, result);
+
+    return result;
+  }
+
+  async analyzeBatch(request: AnalysisBatchRequest): Promise<BatchAnalysisResult[]> {
+    const limit = pLimit(5);
+
+    const promises = request.items.map(item =>
+      limit(async () => {
+        try {
+          return await this.analyzeFull(item);
+        } catch (error: any) {
+          return {
+            error: true,
+            message: error.message || 'An unknown error occurred',
+            originalText: item.text
+          };
+        }
+      })
+    );
+
+    return Promise.all(promises);
   }
 }

@@ -4,7 +4,14 @@ export interface AnalysisRequest {
   text: string;
   language?: SupportedLanguage;
   summaryLength?: 'short' | 'long';
+  anonymize?: boolean;
 }
+
+export interface AnalysisBatchRequest {
+  items: AnalysisRequest[];
+}
+
+// ... (rest of the interfaces are the same)
 
 export interface SentimentTone {
   label:
@@ -86,11 +93,20 @@ export interface FullAnalysisResult {
   meta: {
     provider: string;
     processingTimeMs: number;
+    cached?: boolean;
   };
 }
+
+export interface ApiError {
+  error: true;
+  message: string;
+  originalText: string;
+}
+
+export type BatchAnalysisResult = FullAnalysisResult | ApiError;
 
 export interface AnalysisContext extends AnalysisRequest {
   detectedLanguage?: SupportedLanguage;
 }
 
-export type AnalysisFeature = 'full' | 'sentiment' | 'topics' | 'keywords' | 'summary' | 'toxicity' | 'entities';
+export type AnalysisFeature = 'full' | 'batch' | 'sentiment' | 'topics' | 'keywords' | 'summary' | 'toxicity' | 'entities';

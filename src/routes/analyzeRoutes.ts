@@ -1,12 +1,18 @@
 import { Router } from 'express';
 import { analyzeController } from '../controllers/analyzeController';
 import { validateBody } from '../middleware/validateRequest';
-import { analysisRequestSchema } from '../types/schemas';
+import { analysisRequestSchema, analysisBatchRequestSchema } from '../types/schemas';
 import { createFeatureGate } from '../middleware/featureGate';
 
 const router = Router();
 
 router.post('/full', createFeatureGate('full'), validateBody(analysisRequestSchema), analyzeController.full);
+router.post(
+  '/batch',
+  createFeatureGate('batch'),
+  validateBody(analysisBatchRequestSchema),
+  analyzeController.batch
+);
 router.post('/sentiment', createFeatureGate('sentiment'), validateBody(analysisRequestSchema), analyzeController.sentiment);
 router.post('/topics', createFeatureGate('topics'), validateBody(analysisRequestSchema), analyzeController.topics);
 router.post('/keywords', createFeatureGate('keywords'), validateBody(analysisRequestSchema), analyzeController.keywords);

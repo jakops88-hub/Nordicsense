@@ -24,10 +24,10 @@ const loadFranc = async (): Promise<FrancFn> => {
 };
 
 export const detectLanguage = async (text: string): Promise<SupportedLanguage> => {
-  if (!text || text.length < 10) {
-    return 'sv';
+  if (!text || text.length < 20) {
+    return 'en';
   }
   const franc = await loadFranc();
-  const detected = franc(text, { minLength: 10 });
-  return langMap[detected] ?? 'sv';
+  const detected = franc(text, { minLength: 20 });
+  return langMap[detected] ?? 'en';
 };
